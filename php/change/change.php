@@ -1,23 +1,47 @@
 <?php
 
-function findFewestCoins($possibleValues, $amount)
-{
-    rsort($possibleValues);
-    $coins = [];
-
-    foreach ($possibleValues as $possibleValue) {
-        for ($i=0;$i<floor($amount/$possibleValue);$i++) {
-            $coins[] = $possibleValue;
-        }
-
-        $amount -= $possibleValue * floor($amount/$possibleValue);
+function findFewestCoins($coins, $amount){
+    if ($amount < 0) {
+        throw new InvalidArgumentException("Cannot make change for negative value");
     }
 
-    sort($coins);
-    var_dump($coins);
+    rsort($coins);
+    $change = process($coins, $amount);
+    //see if there's a better solution with fewer coins by skipping the largest value used
+    $first = count($change);
+    $change2 = process($coins, $amount, $change[0], false);
+    $second = count($change2);
+    if ($second < $first){
+        $change = $change2;
+    }
 
-    return $coins;
+    sort($change);
+    return $change;
 }
 
-findFewestCoins(array(1, 4, 15, 20, 50), 23);
-// array(4, 4, 15)
+function process($coins, $amount, $avoidCoin = null, $exception = true)
+{
+    $change = [];
+    //$initAmount = $amount;
+
+    while($amount){
+        foreach($coins as $c){
+            if ($avoidCoin && $c == $avoidCoin){
+                continue;
+            }
+            if ($amount >= $c){
+                $change[] = $c;
+                $amount -= $c;
+                continue 2;
+            }
+        }
+        if ($exception /*&& count($coins) > 1*/) {
+            //array_shift($coins);
+            //process($coins, $initAmount);
+            throw new InvalidArgumentException("No coins small enough to make change");
+        }
+        break;
+    }
+
+    return $change;
+}
